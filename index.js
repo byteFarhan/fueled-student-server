@@ -495,7 +495,32 @@ async function run() {
       }
       res.send(result);
     });
-
+    // update meal
+    app.put("/meal-update/:id", verifyToken, async (req, res) => {
+      const meal = req.body;
+      const filter = { _id: new ObjectId(req.params.id) };
+      // console.log(review);
+      const doc = {
+        $set: {
+          ...meal,
+        },
+      };
+      const result = await mealsCollection.updateOne(filter, doc);
+      res.send(result);
+    });
+    // Meal delete
+    app.delete("/delete-meal/:id", verifyToken, async (req, res) => {
+      const query = { _id: new ObjectId(req.params.id) };
+      const result = await mealsCollection.deleteOne(query);
+      res.send(result);
+    });
+    // Meals total length
+    app.get("/meals-len", async (req, res) => {
+      const result = await mealsCollection.estimatedDocumentCount();
+      const finalRes = result;
+      // console.log(finalRes);
+      res.send({ finalRes });
+    });
     //Meals related api's
     app.get("/meals-six", async (req, res) => {
       const result = await mealsCollection
