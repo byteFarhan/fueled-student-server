@@ -636,6 +636,88 @@ async function run() {
       }
       res.send(likedd);
     });
+
+    // add review post
+    app.post("/post-review", verifyToken, async (req, res) => {
+      const review = req.body;
+      console.log(review);
+      const result = await reviewCollection.insertOne(review);
+      res.send(result);
+    });
+    // reviews read
+    app.get("/reviews", async (req, res) => {
+      const result = await reviewCollection.find().sort({ _id: -1 }).toArray();
+      res.send(result);
+    });
+
+    // Update review post
+    app.put("/review-update/:id", verifyToken, async (req, res) => {
+      const review = req.body;
+      const filter = { _id: new ObjectId(req.params.id) };
+      // console.log(review);
+      const doc = {
+        $set: {
+          ...review,
+        },
+      };
+      const result = await reviewCollection.updateOne(filter, doc);
+      res.send(result);
+    });
+    // review read by my post
+    app.get("/read-my-review/:email", verifyToken, async (req, res) => {
+      const email = req.params.email;
+      const query = { reviewUserEmail: email };
+      const myReviewArr = await reviewCollection
+        .find(query)
+        .sort({ _id: -1 })
+        .toArray();
+      res.send(myReviewArr);
+    });
+    // review post read
+    app.get("/read-review/:id", async (req, res) => {
+      const query = { postId: req.params.id };
+      const result = await reviewCollection
+        .find(query)
+        .sort({ _id: -1 })
+        .toArray();
+      res.send(result);
+    });
+    // My review delete
+    app.delete("/delete-review/:id", verifyToken, async (req, res) => {
+      const query = { _id: new ObjectId(req.params.id) };
+      const result = await reviewCollection.deleteOne(query);
+      res.send(result);
+    });
+    // Sum of all rating
+    app.get("/sum-of-rating/:id", async (req, res) => {
+      try {
+        const doc = [
+          { $match: { postId: req.params.id } },
+          {
+            $group: {
+              _id: null,
+              totalRating: { $sum: "$rating" },
+              totalCount: { $sum: 1 },
+            },
+          },
+        ];
+        const result = await reviewCollection.aggregate(doc).toArray();
+        if (result.length > 0) {
+          const totalRating = result[0].totalRating;
+          const totalCount = result[0].totalCount;
+          const averageRating = totalCount > 0 ? totalRating / totalCount : 0;
+          res.json({
+            totalRating: totalRating,
+            totalCount: totalCount,
+            averageRating: averageRating,
+          });
+        }
+      } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: "Internal server error" });
+      }
+    });
+
     // Send a ping to confirm a successful connection
     // await client.db("admin").command({ ping: 1 });
     console.log(
