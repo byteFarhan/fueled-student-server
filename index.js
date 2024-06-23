@@ -220,6 +220,74 @@ async function run() {
       const result = await userCollection.updateOne(query, update);
       res.send(result);
     });
+
+    // Payment part token passing =======
+    app.post("/create-payment-intent", verifyToken, async (req, res) => {
+      const { price } = req.body;
+      const pricee = parseInt(price * 100);
+      // console.log(pricee);
+      // return;
+      // Create a PaymentIntent with the order amount and currency
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: pricee,
+        currency: "usd",
+        payment_method_types: ["card"],
+      });
+
+      res.send({
+        clientSecret: paymentIntent.client_secret,
+      });
+    });
+
+    //  Payment Saved
+    app.post("/payments", verifyToken, async (req, res) => {
+      const data = req.body;
+      // const query = { email: data.email, badge: badge };
+      const query2 = { userEmail: data.email };
+      const badge = data.badge;
+      const update = {
+        $set: {
+          badge: badge,
+        },
+      };
+      const options = { upsert: true };
+      const user_update = await userCollection.updateOne(
+        query2,
+        update,
+        options
+      );
+
+      // const existUser = await paymentCollection.findOne(query);
+      // if (existUser) {
+      //   return res.send({ message: 'User Allready Exists', insertedId: null });
+      // }
+      const result = await paymentCollection.insertOne(data);
+
+      res.send({ result, user_update });
+    });
+    //  Payment History read
+    app.get("/all-payments", verifyToken, async (req, res) => {
+      const result = await paymentCollection.find().sort({ _id: -1 }).toArray();
+      res.send(result);
+    });
+    app.get("/paymentss/:email", verifyToken, async (req, res) => {
+      const query = { email: req.params.email };
+      const result = await paymentCollection
+        .find(query)
+        .sort({ _id: -1 })
+        .toArray();
+      res.send(result);
+    });
+    app.get("/paymentssCnf/:email", async (req, res) => {
+      const query = { email: req.params.email };
+      const result = await paymentCollection.findOne(query);
+      let final = false;
+      if (result) {
+        final = true;
+      }
+      res.send(final);
+    });
+
     //Meals related api's
     app.get("/meals-six", async (req, res) => {
       const result = await mealsCollection
