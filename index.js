@@ -110,24 +110,67 @@ async function run() {
     });
 
     //users related action start ======================================================
-    app.get("/users", async (req, res) => {
-      let query = {};
-      const result = await usersCollection.find(query).toArray();
+    // Services related API
+
+    // User part============
+
+    // New user post-
+    app.post("/new-user", async (req, res) => {
+      const user = req.body;
+      // console.log(user);
+      // return;
+      const query = { userEmail: user.userEmail };
+      const existUser = await userCollection.findOne(query);
+      if (existUser) {
+        return res.send({ message: "User Allready Exists", insertedId: null });
+      }
+      const result = await userCollection.insertOne(user);
       res.send(result);
     });
-
-    app.post("/users", async (req, res) => {
-      const userInfo = req.body;
-      const query = { email: userInfo.email };
-      const existingUser = await usersCollection.findOne(query);
-      if (existingUser) {
-        return res.send({ message: "user already exists", insertedId: null });
-      } else {
-        const result = await usersCollection.insertOne(userInfo);
-        return res.send(result);
-      }
+    // All user read
+    app.get("/total-users", verifyToken, async (req, res) => {
+      const result = await userCollection.estimatedDocumentCount();
+      res.send({ count: result });
     });
+    app.get("/users", verifyToken, async (req, res) => {
+      const search = req.query.search;
+      const filter = req.query.filter;
+      const perpage = parseInt(req.query.perpage);
+      const currentpage = parseInt(req.query.currentpage);
+      const skip = perpage * currentpage;
 
+      let result;
+      let doc;
+      if (
+        filter === "Silver" ||
+        filter === "Gold" ||
+        filter === "Platinum" ||
+        filter === "Bronze"
+      ) {
+        doc = {
+          badge: filter,
+        };
+      }
+
+      if (search) {
+        const query = {
+          $or: [
+            { userName: { $regex: search, $options: "i" } },
+            { userEmail: { $regex: search, $options: "i" } },
+          ],
+        };
+        result = await userCollection.find(query).toArray();
+      } else if (doc) {
+        result = await userCollection.find(doc).toArray();
+      } else {
+        result = await userCollection
+          .find()
+          .limit(perpage)
+          .skip(skip)
+          .toArray();
+      }
+      res.send(result);
+    });
     //Meals related api's
     app.get("/meals-six", async (req, res) => {
       const result = await mealsCollection
