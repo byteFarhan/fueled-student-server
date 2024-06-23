@@ -287,7 +287,91 @@ async function run() {
       }
       res.send(final);
     });
+    // Main part=======================
+    app.post("/upcomig-meal", verifyToken, async (req, res) => {
+      const meal = req.body;
+      // console.log(newItem);
+      const result = await upcomingCollection.insertOne(meal);
+      res.send(result);
+    });
+    app.get("/upcoming-meals", async (req, res) => {
+      const filter = req.query.filter;
+      const search = req.query.search;
 
+      let doc;
+      // Filtering logic =======
+      if (filter === "dinner" || filter === "breakfast" || filter === "lunch") {
+        doc = {
+          mealType: filter,
+        };
+      } else if (
+        filter === "15,20" ||
+        filter === "10,15" ||
+        filter === "5,10" ||
+        filter === "0,5"
+      ) {
+        const filArr = filter.split(",");
+        const filter1 = parseInt(filArr[0]);
+        const filter2 = parseInt(filArr[1]);
+        doc = {
+          price: {
+            $gte: filter1,
+            $lte: filter2,
+          },
+        };
+      } else if (filter === "20") {
+        const filterAb = parseInt(filter);
+        // console.log(filterAb, '++++++++');
+        doc = {
+          price: {
+            $gte: filterAb,
+          },
+        };
+      }
+
+      let result;
+      if (search) {
+        const query = {
+          title: { $regex: search, $options: "i" },
+        };
+        result = await upcomingCollection
+          .find(query)
+          .sort({ likes: -1 })
+          .toArray();
+      } else if (doc) {
+        result = await upcomingCollection
+          .find(doc)
+          .sort({ likes: -1 })
+          .toArray();
+      } else {
+        result = await upcomingCollection.find().sort({ likes: -1 }).toArray();
+      }
+      res.send(result);
+    });
+    app.put("/upcoming-meal-update/:id", verifyToken, async (req, res) => {
+      const meal = req.body;
+      const filter = { _id: new ObjectId(req.params.id) };
+      // console.log(review);
+      const doc = {
+        $set: {
+          ...meal,
+        },
+      };
+      const result = await upcomingCollection.updateOne(filter, doc);
+      res.send(result);
+    });
+    // Meal delete Upcoming
+    app.delete("/delete-upcoming-meal/:id", verifyToken, async (req, res) => {
+      const query = { _id: new ObjectId(req.params.id) };
+      const result = await upcomingCollection.deleteOne(query);
+      res.send(result);
+    });
+    app.post("/post-meal", verifyToken, async (req, res) => {
+      const meal = req.body;
+      // console.log(newItem);
+      const result = await mealsCollection.insertOne(meal);
+      res.send(result);
+    });
     //Meals related api's
     app.get("/meals-six", async (req, res) => {
       const result = await mealsCollection
