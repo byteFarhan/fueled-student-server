@@ -717,6 +717,153 @@ async function run() {
         res.status(500).json({ error: "Internal server error" });
       }
     });
+    // Meals Request
+    app.post("/meals-request", verifyToken, async (req, res) => {
+      const request = req.body;
+      // console.log(request);
+      const query = {
+        recEmail: request.recEmail,
+        recMealId: request.recMealId,
+      };
+      const existRec = await mealsRequestCollection.findOne(query);
+      if (existRec) {
+        return res.send({
+          message: "Request Allready Exists",
+          insertedId: null,
+        });
+      }
+      const result = await mealsRequestCollection.insertOne(request);
+      res.send(result);
+    });
+
+    app.get("/request-meals/:email", verifyToken, async (req, res) => {
+      const email = req.params.email;
+      try {
+        const query = { recEmail: email };
+        const requestsArray = await mealsRequestCollection
+          .find(query)
+          .sort({ _id: -1 })
+          .toArray();
+
+        // Ensure that we have requests
+        if (requestsArray.length === 0) {
+          return res.send([]);
+        }
+
+        // Extract recMealIds from requests and convert them to ObjectId
+        const recMealIds = requestsArray.map(
+          (request) => new ObjectId(request.recMealId)
+        );
+
+        // Query the meals collection with the array of recMealIds
+        const queryMeal = { _id: { $in: recMealIds } };
+        const mealsArray = await mealsCollection.find(queryMeal).toArray();
+
+        // Create a lookup object from mealsArray
+        const mealsLookup = mealsArray.reduce((acc, meal) => {
+          acc[meal._id.toString()] = meal;
+          return acc;
+        }, {});
+
+        // Merge the arrays and adjust the structure as required
+        const finalResult = requestsArray.map((request) => {
+          const meal = mealsLookup[request.recMealId];
+          if (meal) {
+            // Combine the request and meal objects, remove original _id
+            const { _id, ...mealData } = meal;
+            return {
+              ...request,
+              ...mealData,
+              _id: request._id, // retain the original request _id
+            };
+          }
+          return request;
+        });
+
+        // console.log(finalResult);
+        res.send(finalResult);
+      } catch (error) {
+        console.error("Error fetching meal data:", error);
+        res.status(500).send({ error: "Internal Server Error" });
+      }
+    });
+
+    app.delete("/cancel-req/:id", verifyToken, async (req, res) => {
+      const id = req.params.id;
+      console.log(id);
+      const query = { _id: new ObjectId(id) };
+      const result = await mealsRequestCollection.deleteOne(query);
+      res.send(result);
+    });
+
+    app.get("/total-request", verifyToken, async (req, res) => {
+      const result = await mealsRequestCollection.estimatedDocumentCount();
+      res.send({ count: result });
+    });
+
+    app.get("/request", async (req, res) => {
+      const search = req.query.search;
+      const filter = req.query.filter;
+      const perpage = parseInt(req.query.perpage);
+      const currentpage = parseInt(req.query.currentpage);
+      const skip = perpage * currentpage;
+
+      let doc;
+      if (
+        filter === "pending" ||
+        filter === "processing" ||
+        filter === "served"
+      ) {
+        doc = {
+          status: filter,
+        };
+      }
+
+      let result;
+      if (search) {
+        const query = {
+          $or: [
+            { recEmail: { $regex: search, $options: "i" } },
+            { recName: { $regex: search, $options: "i" } },
+          ],
+        };
+        result = await mealsRequestCollection.find(query).toArray();
+      } else if (doc) {
+        result = await mealsRequestCollection
+          .find(doc)
+          .sort({ _id: -1 })
+          .toArray();
+      } else {
+        result = await mealsRequestCollection
+          .find()
+          .limit(perpage)
+          .skip(skip)
+          .sort({ _id: -1 })
+          .toArray();
+      }
+      res.send(result);
+    });
+    app.patch("/request-meals-status-update", verifyToken, async (req, res) => {
+      const id = req.query.id;
+      const status = req.query.status;
+      // console.log('id:', id, '  status: ', statusDta);
+      const query = { _id: new ObjectId(id) };
+      const docUpdate = {
+        $set: {
+          status: status,
+        },
+      };
+      const result = mealsRequestCollection.updateOne(query, docUpdate);
+      res.send(result);
+    });
+
+    app.delete("/request-delete/:id", verifyToken, async (req, res) => {
+      const id = req.params.id;
+      // console.log(id);
+      const query = { _id: new ObjectId(id) };
+      const result = await mealsRequestCollection.deleteOne(query);
+      res.send(result);
+    });
 
     // Send a ping to confirm a successful connection
     // await client.db("admin").command({ ping: 1 });
