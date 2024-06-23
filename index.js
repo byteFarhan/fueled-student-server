@@ -378,7 +378,7 @@ async function run() {
       const result = await mealsCollection.estimatedDocumentCount();
       res.send({ count: result });
     });
-    // Author Md Ataullah
+
     app.get("/meals", async (req, res) => {
       const filter = req.query.filter;
       const search = req.query.search;
@@ -867,9 +867,9 @@ async function run() {
 
     // Send a ping to confirm a successful connection
     // await client.db("admin").command({ ping: 1 });
-    console.log(
-      "Pinged your deployment. You successfully connected to MongoDB!"
-    );
+    // console.log(
+    //   "Pinged your deployment. You successfully connected to MongoDB!"
+    // );
   } finally {
     // Ensures that the client will close when you finish/error
     // await client.close();
