@@ -205,6 +205,21 @@ async function run() {
       const result = await userCollection.updateOne(query, update, options);
       res.send(result);
     });
+
+    // User role change --
+    app.patch("/change-user-role", verifyToken, async (req, res) => {
+      const role = req.query.role;
+      const id = req.query.id;
+      // console.log('empolye:', role, '===id:', id);
+      const query = { _id: new ObjectId(id) };
+      const update = {
+        $set: {
+          role: role,
+        },
+      };
+      const result = await userCollection.updateOne(query, update);
+      res.send(result);
+    });
     //Meals related api's
     app.get("/meals-six", async (req, res) => {
       const result = await mealsCollection
