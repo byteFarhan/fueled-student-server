@@ -1,6 +1,6 @@
 # Hostel Management System - Server side
 
-## Live URL: https://fueled-student.web.app/
+## Live URL: https://dine-ease-a12.web.app/
 
 This project aims to develop a Hostel Management system for a university using the MERN stack (MongoDB, Express.js, React.js, Node.js). The system enables administrators to manage student meals and food reviews efficiently while enhancing the student experience in the university hostel.
 
