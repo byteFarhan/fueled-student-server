@@ -563,6 +563,79 @@ async function run() {
       // console.log(result);
       res.send(result);
     });
+    // user Meals post like counting
+    app.put("/like-count", verifyToken, async (req, res) => {
+      const data = req.body;
+      // console.log(data);
+      const postId = data.id;
+      const count = data.count;
+      const query = { _id: new ObjectId(postId) };
+      // console.log('count value:', count, 'id:', postId);
+      const doc = { $inc: { likes: count } };
+      const result = await mealsCollection.updateOne(query, doc);
+
+      const countLike = data.liked;
+      const email = data.email;
+      const filter = { email: email, postId: postId };
+      const options = { upsert: true };
+      const updateDoc = {
+        $set: { countLike, email, postId },
+      };
+      const colorResult = await likeCollection.updateOne(
+        filter,
+        updateDoc,
+        options
+      );
+      // if (colorResult.upsertedCount > 0) {
+      //   console.log(
+      //     `A new document was inserted with the _id: ${colorResult.upsertedId}`
+      //   );
+      // } else if (colorResult.modifiedCount > 0) {
+      //   console.log(`An existing document was updated`);
+      // } else {
+      //   console.log(`No document was modified or inserted`);
+      // }
+      res.send({ result, colorResult });
+    });
+    // user Meals post like counting
+    app.put("/like-count-upcoming", verifyToken, async (req, res) => {
+      const data = req.body;
+      // console.log(data);
+      const postId = data.id;
+      const count = data.count;
+      const query = { _id: new ObjectId(postId) };
+      // console.log('count value:', count, 'id:', postId);
+      const doc = { $inc: { likes: count } };
+      const result = await upcomingCollection.updateOne(query, doc);
+
+      const countLike = data.liked;
+      const email = data.email;
+      const filter = { email: email, postId: postId };
+      const options = { upsert: true };
+      const updateDoc = {
+        $set: { countLike, email, postId },
+      };
+      const colorResult = await likeCollection.updateOne(
+        filter,
+        updateDoc,
+        options
+      );
+      res.send({ result, colorResult });
+    });
+    // Like select or not select
+    app.get("/liked-count", async (req, res) => {
+      const id = req.query.id;
+      const email = req.query.email;
+      const query = { postId: id, email: email };
+      const result = await likeCollection.findOne(query);
+      let likedd = false;
+      if (result?.countLike === 1) {
+        likedd = true;
+      } else {
+        likedd = false;
+      }
+      res.send(likedd);
+    });
     // Send a ping to confirm a successful connection
     // await client.db("admin").command({ ping: 1 });
     console.log(
