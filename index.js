@@ -190,7 +190,21 @@ async function run() {
 
       res.send({ admin });
     });
-
+    // User badge change --
+    app.patch("/change-user-badge", verifyToken, async (req, res) => {
+      const badge = req.query.badge;
+      const email = req.query.email;
+      // console.log('empolye:', role, '===id:', id);
+      const query = { email: email };
+      const update = {
+        $set: {
+          role: badge,
+        },
+      };
+      const options = { upsert: true };
+      const result = await userCollection.updateOne(query, update, options);
+      res.send(result);
+    });
     //Meals related api's
     app.get("/meals-six", async (req, res) => {
       const result = await mealsCollection
