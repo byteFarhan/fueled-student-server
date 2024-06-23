@@ -171,6 +171,26 @@ async function run() {
       }
       res.send(result);
     });
+
+    // Check Admin
+    app.get("/user/admin/:email", verifyToken, async (req, res) => {
+      const email = req.params.email;
+      // console.log(email);
+      if (email !== req.user.email) {
+        return req.status(403).send({ message: "Unauthorized access" });
+      }
+      // console.log('emailll', req.user.email);
+      const query = { userEmail: email, role: "admin" };
+      const result = await userCollection.findOne(query);
+      let admin = false;
+      if (result?.role === "admin") {
+        admin = true;
+      }
+      // console.log(admin);
+
+      res.send({ admin });
+    });
+
     //Meals related api's
     app.get("/meals-six", async (req, res) => {
       const result = await mealsCollection
