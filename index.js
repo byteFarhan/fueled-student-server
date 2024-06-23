@@ -29,7 +29,7 @@ async function run() {
     // await client.connect();
     const database = client.db("hostel-management");
     const usersCollection = database.collection("users");
-    const mealsCollection = database.collection("");
+    const mealsCollection = database.collection("all_meals");
     app.post("/jwt", async (req, res) => {
       const user = req.body;
       const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {
@@ -54,6 +54,43 @@ async function run() {
         const result = await usersCollection.insertOne(userInfo);
         return res.send(result);
       }
+    });
+
+    //Meals related api's
+    app.get("/meals-six", async (req, res) => {
+      const result = await mealsCollection
+        .find()
+        .sort({ _id: -1 })
+        .limit(6)
+        .toArray();
+      res.send(result);
+    });
+    app.get("/breakfast", async (req, res) => {
+      const query = { category: "Breakfast" };
+      const result = await mealsCollection
+        .find(query)
+        .sort({ _id: -1 })
+        .limit(6)
+        .toArray();
+      res.send(result);
+    });
+    app.get("/lunch", async (req, res) => {
+      const query = { category: "Lunch" };
+      const result = await mealsCollection
+        .find(query)
+        .sort({ _id: -1 })
+        .limit(6)
+        .toArray();
+      res.send(result);
+    });
+    app.get("/dinner", async (req, res) => {
+      const query = { category: "Dinner" };
+      const result = await mealsCollection
+        .find(query)
+        .sort({ _id: -1 })
+        .limit(6)
+        .toArray();
+      res.send(result);
     });
     // Send a ping to confirm a successful connection
     // await client.db("admin").command({ ping: 1 });
