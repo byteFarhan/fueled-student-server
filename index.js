@@ -372,6 +372,130 @@ async function run() {
       const result = await mealsCollection.insertOne(meal);
       res.send(result);
     });
+
+    // All user read
+    app.get("/total-meals", async (req, res) => {
+      const result = await mealsCollection.estimatedDocumentCount();
+      res.send({ count: result });
+    });
+    // Author Md Ataullah
+    app.get("/meals", async (req, res) => {
+      const filter = req.query.filter;
+      const search = req.query.search;
+      const page = parseInt(req.query.page) || 1; // Default to page 1 if not provided
+      const pageSize = 4;
+      const skip = (page - 1) * pageSize;
+
+      let doc;
+      // Filtering logic =======
+      if (filter === "dinner" || filter === "breakfast" || filter === "lunch") {
+        doc = {
+          mealType: filter,
+        };
+      } else if (
+        filter === "15,20" ||
+        filter === "10,15" ||
+        filter === "5,10" ||
+        filter === "0,5"
+      ) {
+        const filArr = filter.split(",");
+        const filter1 = parseInt(filArr[0]);
+        const filter2 = parseInt(filArr[1]);
+        doc = {
+          price: {
+            $gte: filter1,
+            $lte: filter2,
+          },
+        };
+      } else if (filter === "20") {
+        const filterAb = parseInt(filter);
+        // console.log(filterAb, '++++++++');
+        doc = {
+          price: {
+            $gte: filterAb,
+          },
+        };
+      }
+
+      let result;
+      if (search) {
+        const sampleDocument = await mealsCollection.findOne();
+        const fields = Object.keys(sampleDocument);
+
+        const query = {
+          $or: fields.map((field) => ({
+            [field]: { $regex: search, $options: "i" },
+          })),
+        };
+
+        result = await mealsCollection
+          .find(query)
+          .sort({ _id: -1 })
+          .skip(skip)
+          .limit(pageSize)
+          .toArray();
+      } else if (doc) {
+        // console.log(doc);
+        result = await mealsCollection
+          .find(doc)
+          .sort({ _id: -1 })
+          .skip(skip)
+          .limit(pageSize)
+          .toArray();
+      } else {
+        result = await mealsCollection
+          .find()
+          .sort({ _id: -1 })
+          .skip(skip)
+          .limit(pageSize)
+          .toArray();
+      }
+      res.send(result);
+    });
+    // detabase all mealsa
+    app.get("/all-meals", verifyToken, async (req, res) => {
+      const search = req.query.search;
+      const filter = req.query.filter;
+      const perpage = parseInt(req.query.perpage);
+      const currentpage = parseInt(req.query.currentpage);
+      const skip = perpage * currentpage;
+
+      // console.log(filter);
+      let result;
+      if (search) {
+        const sampleDocument = await mealsCollection.findOne();
+        const fields = Object.keys(sampleDocument);
+
+        const query = {
+          $or: fields.map((field) => ({
+            [field]: { $regex: search, $options: "i" },
+          })),
+        };
+        result = await mealsCollection.find(query).sort({ _id: -1 }).toArray();
+      } else if (filter === "like") {
+        result = await mealsCollection
+          .find()
+          .sort({ likes: -1 })
+          .limit(perpage)
+          .skip(skip)
+          .toArray();
+      } else if (filter === "review") {
+        result = await mealsCollection
+          .find()
+          .sort({ review: -1 })
+          .limit(perpage)
+          .skip(skip)
+          .toArray();
+      } else {
+        result = await mealsCollection
+          .find()
+          .limit(perpage)
+          .skip(skip)
+          .toArray();
+      }
+      res.send(result);
+    });
+
     //Meals related api's
     app.get("/meals-six", async (req, res) => {
       const result = await mealsCollection
