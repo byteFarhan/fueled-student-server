@@ -521,7 +521,6 @@ async function run() {
       // console.log(finalRes);
       res.send({ finalRes });
     });
-    //Meals related api's
     app.get("/meals-six", async (req, res) => {
       const result = await mealsCollection
         .find()
@@ -531,7 +530,7 @@ async function run() {
       res.send(result);
     });
     app.get("/breakfast", async (req, res) => {
-      const query = { category: "Breakfast" };
+      const query = { mealType: "breakfast" };
       const result = await mealsCollection
         .find(query)
         .sort({ _id: -1 })
@@ -540,7 +539,7 @@ async function run() {
       res.send(result);
     });
     app.get("/lunch", async (req, res) => {
-      const query = { category: "Lunch" };
+      const query = { mealType: "lunch" };
       const result = await mealsCollection
         .find(query)
         .sort({ _id: -1 })
@@ -549,12 +548,19 @@ async function run() {
       res.send(result);
     });
     app.get("/dinner", async (req, res) => {
-      const query = { category: "Dinner" };
+      const query = { mealType: "dinner" };
       const result = await mealsCollection
         .find(query)
         .sort({ _id: -1 })
         .limit(6)
         .toArray();
+      res.send(result);
+    });
+    app.get("/details/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await mealsCollection.findOne(query);
+      // console.log(result);
       res.send(result);
     });
     // Send a ping to confirm a successful connection
